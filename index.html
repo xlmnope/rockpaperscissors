@@ -1,0 +1,359 @@
+<html>
+
+<head>
+  <title>Rock Paper Scissors</title>
+  <link href="https://fonts.googleapis.com/css?family=Amatic+SC:700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+  <script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
+  <link rel='stylesheet' type='text/css' href='assets/style.css'>
+
+ 
+</head>
+
+<body>
+  <div class="container-fluid background text-center">
+    <div class="row justify-content-between" id="scoreboard">
+        
+    </div>
+    <div class="row">
+      <div class = "col-sm-12">
+        <h1 class="rpstitle">Rock, Paper, Scissors!</h1>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-12">
+          <div id="status"></div>
+          <div id="icons">
+            <div class="rock" id='button_rock' value='Rock' >
+
+            </div>
+            <div class="paper" id='button_paper' value='Paper' >
+
+            </div>
+            <div class="scissors" id='button_scissors' value='Scissors' >
+
+            </div>
+          </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-12">
+          <div id="players">
+              <ul id="players-list" style="list-style-type:none">
+              </ul>
+            </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="https://www.gstatic.com/firebasejs/6.1.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/6.1.1/firebase-database.js"></script>
+  <script type='text/javascript'>
+
+    var firebaseConfig = {
+      apiKey: "AIzaSyAbrKKgOSgdsVrcJ4BkrTJr0vJTiALxosg",
+      authDomain: "rockpaperscissors-88820.firebaseapp.com",
+      databaseURL: "https://rockpaperscissors-88820.firebaseio.com",
+      projectId: "rockpaperscissors-88820",
+      storageBucket: "rockpaperscissors-88820.appspot.com",
+      messagingSenderId: "794777124008",
+      appId: "1:794777124008:web:d4ce022ab1725c0a"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    // Get a reference to the database service
+    var database = firebase.database();
+
+    //I started this code using the "Assigning players in a multiplayer game" code  from firebase examples documentation
+    // _The maximum number of players.  If there are already NUM\_PLAYERS assigned, users won't be able to join the game._
+    // (If 2 players are already in, you receive a pop-up saying the game is full.)
+    var NUM_PLAYERS = 2;
+    var GAME_LOCATION = 'https://rockpaperscissors-88820.firebaseio.com';
+    // _A location under GAME\_LOCATION that will store the list of players who have joined the game (up to MAX\_PLAYERS)._
+    var PLAYERS_LOCATION = 'player_list';
+    var PLAYER_DATA_LOCATION = 'player_data';
+    // Store scores
+    var PLAYER_SCORES_LOCATION = 'player_scores';
+    // _Return a persistent user id.  This will be used to assign users the same player data if they refresh._
+    function getMyUserId() {
+      return prompt('Username?', 'Guest');
+    }
+    // setRPS is called when a player presses Rock, Paper, or Scissors. It takes a player number, user ID, and either rock, paper, or scissors to set the player's choice.
+    function setRPS(myPlayerNumber, myUserId, myRPS) {
+      // Create playerDataRef set to the Firebase location of the input player.
+      var playerDataRef = database.ref().child(PLAYER_DATA_LOCATION).child(myPlayerNumber);
+      // Change game state to 'picked' and set rock, paper, or scissors.
+      playerDataRef.set({ userId: myUserId, state: 'picked', rps: myRPS });
+    }
+    // didYouWin is called after both players have made their selections.
+    function didYouWin(yourRPS, opponentRPS) {
+      switch (yourRPS) {
+        case 'rock':
+          switch (opponentRPS) {
+            case 'rock':
+              return 'draw';
+            case 'paper':
+              return 'lose';
+            case 'scissors':
+              return 'win';
+          }
+          break;
+        case 'paper':
+          switch (opponentRPS) {
+            case 'rock':
+              return 'win';
+            case 'paper':
+              return 'draw';
+            case 'scissors':
+              return 'lose';
+          }
+          break;
+        case 'scissors':
+          switch (opponentRPS) {
+            case 'rock':
+              return 'lose';
+            case 'paper':
+              return 'win';
+            case 'scissors':
+              return 'draw';
+          }
+          break;
+      }
+    }
+    // _Called after player assignment completes._
+    // playGame is called to start the initial game and games after "Play Again" has been pressed by both players. If the game is full, an alert pops up saying you can't join.
+    function playGame(myPlayerNumber, myUserId) {
+      if (myPlayerNumber === null) {
+        alert('Game is full.  Can\'t join. :-(');
+      }
+      // If there's a spot, join the game and reset the HTML elements.
+      else {
+        $("#status").empty();
+        $("#scoreboard").empty();
+        $("#players-list").empty();
+        $("#status").css("display", "block");
+        $("#players").html("<ul id='players-list'" +
+          "style='list-style-type:none'></ul>");
+        // Create Firebase data references for your specific player data, all of the player data, and all of the score data. Disconnecting deletes your player data. Score data is persistent.
+        var playerDataRef = database.ref().child(PLAYER_DATA_LOCATION).child(myPlayerNumber);
+        var allPlayersDataRef = database.ref().child(PLAYER_DATA_LOCATION);
+        var playerScoresRef = database.ref().child(PLAYER_SCORES_LOCATION);
+        // The opponent player number is set to the opposite of your player number.
+        var opponentPlayerNumber = myPlayerNumber === 0 ? 1 : 0;
+        // Check if the the player name is new. If it is, add and set their win/loss record to 0, 0. If it's not new, do nothing and use the stored win/loss record.
+        playerScoresRef.on('value', function (snapshot) {
+          if (snapshot.val() === null) {
+            playerScoresRef.child(myUserId).set([0, 0]);
+          } else if (!(myUserId in snapshot.val())) {
+            playerScoresRef.child(myUserId).set([0, 0]);
+          }
+        });
+        // Remove your player data when you disconnect. 
+        playerDataRef.onDisconnect().remove();
+        
+        // Set your player data to your user ID, the game state to start, and no selection yet for rock, paper, or scissors.
+        playerDataRef.set({ userId: myUserId, state: 'start', rps: 'none' });
+        // Change the text in the status element to a waiting message while waiting for a second player to join.
+        $("#status").html("Waiting for second player...");
+        // Every time a value is changed in the player data, this function is run with a snapshot of the player data.
+        allPlayersDataRef.on('value', function (snapshot) {
+          // Check if both players are in the game by checking their game states.
+          if (snapshot.val().length === 2 &&
+            snapshot.val()[0].state === 'start' &&
+            snapshot.val()[1].state === 'start') {
+            // Show the rock, paper, scissors buttons. 
+            //How do I get their playernumber to pass in as an argument?
+            $("#status").html("");
+            $("#icons").css("display", "block")
+            $(".rock").on("click", function(){ 
+              setRPS( myPlayerNumber, myUserId, "rock")
+            });
+            $(".paper").on("click", function(){ 
+              setRPS( myPlayerNumber, myUserId, "paper")
+            });
+            $(".scissors").on("click", function(){ 
+              setRPS( myPlayerNumber, myUserId, "scissors")
+            });
+           
+            // $("#status").html("<input type='button' value='Rock' " +
+            //   "id='button_rock'" + "onclick='setRPS(" + myPlayerNumber +
+            //   ", \"" + myUserId + "\", \"rock\")'/>" +
+            //   "<input type='button' value='Paper' id='button_paper' onclick='setRPS(" +
+            //   myPlayerNumber + ", \"" + myUserId + "\", \"paper\")'/><input type='button'" +
+            //   "value='Scissors' id='button_scissors' onclick='setRPS(" + myPlayerNumber +
+            //   ", \"" + myUserId + "\", \"scissors\")'/>");
+          }
+        });
+        // Take snapshot of player scores when a value changes. Values will change after every game unless it's a draw.
+        playerScoresRef.on('value', function (snapshot) {
+          // Empty the scoreboard before repopulating.
+          $("#scoreboard").empty();
+          // Cycle through the player scores snapshot and append a new list item for each player with their wins and losses. This also checks to find your name so it can be highlighted.
+          snapshot.forEach(function (childSnapshot) {
+            console.log("childsnapshot: ", childSnapshot.key);
+            if (childSnapshot.key === myUserId) {
+              $("#scoreboard").append("<div class='your-score col-4 score'>" + "<p>" +
+                childSnapshot.key +"</p>" + childSnapshot.val()[0] + " / " +
+                childSnapshot.val()[1]);
+            } else {
+              $("#scoreboard").append("<div class= 'score col-4 other-score'>"  + "<p>" + childSnapshot.key +
+                "<p>" + childSnapshot.val()[0] + " / " + childSnapshot.val()[1]);
+            }
+          });
+        });
+        // Run the following function each time a child of the current player data changes.
+        allPlayersDataRef.on('child_changed', function (childSnapshot, prevChildName) {
+          // Run the following function the first time current player data changes.
+          allPlayersDataRef.once('value', function (nameSnapshot) {
+            // Set your player information. Set opponent player information. This is done using the snapshot in the function in .once().
+            var y = nameSnapshot.val();
+            var opponentPlayerNumber = myPlayerNumber === 0 ? 1 : 0;
+            var yourRPS = nameSnapshot.val()[myPlayerNumber].rps;
+            var opponentRPS = nameSnapshot.val()[opponentPlayerNumber].rps;
+            // Check if you have picked and the opponent hasn't. If you've picked, change status text to a waiting message.
+            if (yourRPS !== 'none' && opponentRPS === 'none' &&
+              nameSnapshot.val()[myPlayerNumber].state === 'picked') {
+              $("#status").css("display", "block");
+              $("#status").html("Waiting for second player to pick...");
+            }
+            // Check if both players have picked.
+            if (y[0].rps !== 'none' && y[1].rps !== 'none') {
+              // Turn off function that draws the rock, paper, scissors buttons.
+              allPlayersDataRef.off('value', function (snapshot) {
+                if (snapshot.val().length === 2) {
+                  // Clear the status text. Clear the players list. Display your pick and your opponent's pick.
+                  $("#icons").css( "display", "block" );
+                  $("#status").empty();
+                  // $("#status").append("<input type='button' " +
+                  //   "value='Rock' id='button_rock' onclick='setRPS(" +
+                  //   myPlayerNumber + ", \"" + myUserId +
+                  //   "\", \"rock\")'/><input type='button' value='Paper' " +
+                  //   "id='button_paper' onclick='setRPS(" +
+                  //   myPlayerNumber + ", \"" + myUserId +
+                  //   "\", \"paper\")'/><input type='button' value='Scissors' " +
+                  //   "id='button_scissors' onclick='setRPS(" + myPlayerNumber +
+                  //   ", \"" + myUserId +
+                  //   "\", \"scissors\")'/>");
+                }
+              });
+              $("#status").empty();
+              $("#players").html("<ul id='players-list' style='list-style-type:none'></ul>");
+              $("#players-list").append("<li>You picked: " + yourRPS + "</li>");
+              $("#players-list").append("<li>" +
+                nameSnapshot.val()[opponentPlayerNumber].userId +
+                " picked: " + opponentRPS + "</li>");
+              // Call didYouWin() to check if you won or lost.
+              $("#players-list").append("<li>You " + didYouWin(yourRPS, opponentRPS) + "!");
+              // Empty the scoreboard to prepare to repopulate it with updated scores.
+              $("#scoreboard").empty();
+              //The first time the player scores change, repopulate the scoreboard.
+              playerScoresRef.once('value', function (snapshot) {
+                // Cycle through the player scores snapshot using forEach() and append list items to the score board. Again, check to find and highlight your score.
+                snapshot.forEach(function (childSnapshot) {
+                  if (childSnapshot.name() === myUserId) {
+                    $("#scoreboard").append("<li class='your-score'>" +
+                      childSnapshot.name() + ": " + childSnapshot.val()[0] +
+                      " wins, " + childSnapshot.val()[1] + " losses</li>");
+                  } else {
+                    $("#scoreboard").append("<li>" + childSnapshot.name() +
+                      ": " + childSnapshot.val()[0] + " wins, " +
+                      childSnapshot.val()[1] + " losses</li>");
+                  }
+                });
+              });
+              // Initialize variables for your wins and losses. These will be used to increment the persistent player scores data.
+              var currentWins,
+                currentLosses;
+              // Check if you've picked.
+              if (nameSnapshot.val()[myPlayerNumber].state === 'picked') {
+                // Run this function when your score has changed. This happens after a game completes.
+                playerScoresRef.child(myUserId).on('value', function (snapshot) {
+                  currentWins = snapshot.val()[0];
+                  currentLosses = snapshot.val()[1];
+                });
+                // Check if you won and increment the wins. If you lost, increment the losses. Draws are not recorded.
+                if (didYouWin(yourRPS, opponentRPS) === 'win') {
+                  playerScoresRef.child(myUserId).set([currentWins + 1, currentLosses]);
+                } else if (didYouWin(yourRPS, opponentRPS) === 'lose') {
+                  playerScoresRef.child(myUserId).set([currentWins, currentLosses + 1]);
+                }
+              }
+              // Display a new button to allow you to to play again.
+              $("#players-list").append("<input type='button' value='Play Again' " +
+                "id='button_restart' onclick='playGame(" + myPlayerNumber +
+                ", \"" + myUserId + "\")'/>");
+              // Set game state to finished and set rock, paper, or scissors.
+              playerDataRef.set({ userId: myUserId, state: 'finished', rps: yourRPS });
+            }
+          });
+        });
+      }
+    }
+    // _Use transaction() to assign a player number, then call playGame()._
+    function assignPlayerNumberAndPlayGame() {
+      var myUserId = getMyUserId();
+      var playerListRef = database.ref().child(PLAYERS_LOCATION);
+      playerListRef.transaction(function (playerList) {
+        console.log('====playerlistref.transaction...=====')
+        console.log('playerlist: ', playerList);
+        var i;
+        // _Initialize playerList if we need to._
+        if (playerList === null) {
+          playerList = {};
+        }
+        var joinedGame = false;
+        for (i = 0; i < NUM_PLAYERS; i++) {
+          if (playerList[i] === myUserId) {
+            alert("Already in the game.");
+            return; // _Already in the game. Abort transaction._
+          }
+          else if (!(i in playerList) && !joinedGame) {
+            // _Open spot. Join game_
+            playerList[i] = myUserId;
+            console.log("playerList[i] ", playerList[i]);
+            console.log('myUserId, ', myUserId);
+            // _Don't return playerList until after the loop, in case we find out we're already assigned a spot._
+            joinedGame = true;
+            console.log('joinedgame true: ', joinedGame);
+            break;
+          }
+        }
+        if (joinedGame) {
+          console.log(joinedGame);
+          return playerList;
+        }
+        // _Couldn't join.  Abort transaction by returning nothing._
+      }, function (success, mysterybool, transactionResultSnapshot) {
+        console.log('success', success)
+        console.log('transactionresultsnapshot', transactionResultSnapshot.val())
+      
+        // _Transaction has completed.  See if we're in the game._
+        var myPlayerNumber = null;
+        var resultPlayerList = transactionResultSnapshot.val();
+        for (var i = 0; i < NUM_PLAYERS; i++) {
+          if (resultPlayerList[i] === myUserId) {
+            console.log('// _I got into the game._');
+            console.log('myplayernumber: ',myPlayerNumber)
+            myPlayerNumber = i;
+            console.log('myplayernumber: ', myPlayerNumber)
+            break;
+          }
+        }
+
+			// If this user disconnects by closing or refreshing the browser, remove the user from the database
+			playerListRef.child(myPlayerNumber).onDisconnect().remove();
+        //playerListRef.child(myPlayerNumber).removeOnDisconnect();
+        playGame(myPlayerNumber, myUserId);
+    });
+      }
+
+    
+    assignPlayerNumberAndPlayGame();
+
+  </script>
+</body>
+
+</html>
