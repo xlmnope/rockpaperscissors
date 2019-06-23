@@ -7,48 +7,98 @@
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
     integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
-  <script type='text/javascript' src='http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
   <link rel='stylesheet' type='text/css' href='assets/style.css'>
 
- 
+
 </head>
 
 <body>
+  <div class="modal" id="username" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Username</h5> <button type="button" class="close" data-dismiss="modal"
+            aria-label="Close"> <span aria-hidden="true">&times;</span> </button>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="form-group"> <label for="usernamefield">Username</label> <input type=""
+                class="form-control" id="usernamefield" placeholder="guest"> </div>
+          </form>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-primary" data-dismiss="modal">Submit</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="full" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Sorry game is full</h5> <button type="button" class="close" data-dismiss="modal"
+              aria-label="Close"> <span aria-hidden="true">&times;</span> </button>
+          </div>
+          
+          </div>
+      </div>
+    </div>
+
+    <div class="modal" id="alreadyingame" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">You are already in the game</h5> <button type="button" class="close" data-dismiss="modal"
+                aria-label="Close"> <span aria-hidden="true">&times;</span> </button>
+            </div>
+            
+            </div>
+        </div>
+      </div>
+
   <div class="container-fluid background text-center">
     <div class="row justify-content-between" id="scoreboard">
-        
+
     </div>
     <div class="row">
-      <div class = "col-sm-12">
+      <div class="col-sm-12">
         <h1 class="rpstitle">Rock, Paper, Scissors!</h1>
       </div>
     </div>
     <div class="row">
       <div class="col-sm-12">
-          <div id="status"></div>
-          <div id="icons">
-            <div class="rock" id='button_rock' value='Rock' >
+        <div id="status"></div>
+        <div id="icons">
+          <div class="rock" id='button_rock' value='Rock'>
 
-            </div>
-            <div class="paper" id='button_paper' value='Paper' >
-
-            </div>
-            <div class="scissors" id='button_scissors' value='Scissors' >
-
-            </div>
           </div>
+          <div class="paper" id='button_paper' value='Paper'>
+
+          </div>
+          <div class="scissors" id='button_scissors' value='Scissors'>
+
+          </div>
+        </div>
       </div>
     </div>
     <div class="row">
       <div class="col-sm-12">
-          <div id="players">
-              <ul id="players-list" style="list-style-type:none">
-              </ul>
-            </div>
+        <div id="players">
+          <ul id="players-list" style="list-style-type:none">
+          </ul>
+        </div>
       </div>
     </div>
   </div>
-  
+  <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+    integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+    crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+    crossorigin="anonymous"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+    crossorigin="anonymous"></script>
+
   <script src="https://www.gstatic.com/firebasejs/6.1.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/6.1.1/firebase-database.js"></script>
   <script type='text/javascript'>
@@ -67,6 +117,13 @@
     // Get a reference to the database service
     var database = firebase.database();
 
+    //initialize modals
+    $('#username').modal({ show: false })
+    $('#full').modal({ show: false })
+    $('#alreadyingame').modal({ show: false })
+
+
+
     //I started this code using the "Assigning players in a multiplayer game" code  from firebase examples documentation
     // _The maximum number of players.  If there are already NUM\_PLAYERS assigned, users won't be able to join the game._
     // (If 2 players are already in, you receive a pop-up saying the game is full.)
@@ -79,7 +136,14 @@
     var PLAYER_SCORES_LOCATION = 'player_scores';
     // _Return a persistent user id.  This will be used to assign users the same player data if they refresh._
     function getMyUserId() {
-      return prompt('Username?', 'Guest');
+      $('#username').modal('show');
+      $('button').click(function(){ 
+        //store the user's entry in a variable
+        var username = $('#usernamefield').val();
+        console.log("username: ", username);
+        assignPlayerNumberAndPlayGame(username);
+      });
+      //return prompt('Username?', 'Guest');
     }
     // setRPS is called when a player presses Rock, Paper, or Scissors. It takes a player number, user ID, and either rock, paper, or scissors to set the player's choice.
     function setRPS(myPlayerNumber, myUserId, myRPS) {
@@ -124,10 +188,12 @@
       }
     }
     // _Called after player assignment completes._
-    // playGame is called to start the initial game and games after "Play Again" has been pressed by both players. If the game is full, an alert pops up saying you can't join.
+    // playGame is called to start the initial game and games after "Play Again" has been pressed by both players. If the game is full, a modal pops up saying you can't join.
     function playGame(myPlayerNumber, myUserId) {
       if (myPlayerNumber === null) {
-        alert('Game is full.  Can\'t join. :-(');
+        $('#full').modal('show');
+
+       // alert('Game is full.  Can\'t join. :-(');
       }
       // If there's a spot, join the game and reset the HTML elements.
       else {
@@ -153,13 +219,16 @@
         });
         // Remove your player data when you disconnect. 
         playerDataRef.onDisconnect().remove();
-        
+
         // Set your player data to your user ID, the game state to start, and no selection yet for rock, paper, or scissors.
         playerDataRef.set({ userId: myUserId, state: 'start', rps: 'none' });
         // Change the text in the status element to a waiting message while waiting for a second player to join.
         $("#status").html("Waiting for second player...");
         // Every time a value is changed in the player data, this function is run with a snapshot of the player data.
         allPlayersDataRef.on('value', function (snapshot) {
+          console.log("snapshot", snapshot);
+          console.log("snapshot.val()", snapshot.val());
+          console.log("snapshot.val()[0]", snapshot.val()[0]);
           // Check if both players are in the game by checking their game states.
           if (snapshot.val().length === 2 &&
             snapshot.val()[0].state === 'start' &&
@@ -168,16 +237,16 @@
             //How do I get their playernumber to pass in as an argument?
             $("#status").html("");
             $("#icons").css("display", "block")
-            $(".rock").on("click", function(){ 
-              setRPS( myPlayerNumber, myUserId, "rock")
+            $(".rock").on("click", function () {
+              setRPS(myPlayerNumber, myUserId, "rock")
             });
-            $(".paper").on("click", function(){ 
-              setRPS( myPlayerNumber, myUserId, "paper")
+            $(".paper").on("click", function () {
+              setRPS(myPlayerNumber, myUserId, "paper")
             });
-            $(".scissors").on("click", function(){ 
-              setRPS( myPlayerNumber, myUserId, "scissors")
+            $(".scissors").on("click", function () {
+              setRPS(myPlayerNumber, myUserId, "scissors")
             });
-           
+
             // $("#status").html("<input type='button' value='Rock' " +
             //   "id='button_rock'" + "onclick='setRPS(" + myPlayerNumber +
             //   ", \"" + myUserId + "\", \"rock\")'/>" +
@@ -196,11 +265,11 @@
             console.log("childsnapshot: ", childSnapshot.key);
             if (childSnapshot.key === myUserId) {
               $("#scoreboard").append("<div class='your-score col-4 score'>" + "<p>" +
-                childSnapshot.key +"</p>" + childSnapshot.val()[0] + " / " +
+                childSnapshot.key + "</p>" + childSnapshot.val()[0] + " / " +
                 childSnapshot.val()[1]);
             } else {
-              $("#scoreboard").append("<div class= 'score col-4 other-score'>"  + "<p>" + childSnapshot.key +
-                "<p>" + childSnapshot.val()[0] + " / " + childSnapshot.val()[1]);
+              $("#scoreboard").append("<div class= 'score col-4 other-score'>" + "<p>" + childSnapshot.key +
+                "</p>" + childSnapshot.val()[0] + " / " + childSnapshot.val()[1]);
             }
           });
         });
@@ -225,7 +294,7 @@
               allPlayersDataRef.off('value', function (snapshot) {
                 if (snapshot.val().length === 2) {
                   // Clear the status text. Clear the players list. Display your pick and your opponent's pick.
-                  $("#icons").css( "display", "block" );
+                  $("#icons").css("display", "block");
                   $("#status").empty();
                   // $("#status").append("<input type='button' " +
                   //   "value='Rock' id='button_rock' onclick='setRPS(" +
@@ -253,14 +322,15 @@
               playerScoresRef.once('value', function (snapshot) {
                 // Cycle through the player scores snapshot using forEach() and append list items to the score board. Again, check to find and highlight your score.
                 snapshot.forEach(function (childSnapshot) {
-                  if (childSnapshot.name() === myUserId) {
-                    $("#scoreboard").append("<li class='your-score'>" +
-                      childSnapshot.name() + ": " + childSnapshot.val()[0] +
-                      " wins, " + childSnapshot.val()[1] + " losses</li>");
+                  console.log("childSnapShot", childSnapshot);
+                  if (childSnapshot.key === myUserId) {
+                    $("#scoreboard").append("<div class='your-score score col-4'>" + "<p>" +
+                      childSnapshot.key  + "</p>" + childSnapshot.val()[0] +
+                      " / " + childSnapshot.val()[1] + "</div>");
                   } else {
-                    $("#scoreboard").append("<li>" + childSnapshot.name() +
-                      ": " + childSnapshot.val()[0] + " wins, " +
-                      childSnapshot.val()[1] + " losses</li>");
+                    $("#scoreboard").append("<div class='score col-4 other-score'>" + "<p>" + childSnapshot.key + "</p>" +
+                       childSnapshot.val()[0] + " / " +
+                      childSnapshot.val()[1] + " </div>");
                   }
                 });
               });
@@ -293,8 +363,9 @@
       }
     }
     // _Use transaction() to assign a player number, then call playGame()._
-    function assignPlayerNumberAndPlayGame() {
-      var myUserId = getMyUserId();
+    function assignPlayerNumberAndPlayGame(username) {
+      var myUserId = username;
+
       var playerListRef = database.ref().child(PLAYERS_LOCATION);
       playerListRef.transaction(function (playerList) {
         console.log('====playerlistref.transaction...=====')
@@ -307,7 +378,9 @@
         var joinedGame = false;
         for (i = 0; i < NUM_PLAYERS; i++) {
           if (playerList[i] === myUserId) {
-            alert("Already in the game.");
+            //alert("Already in the game.");
+            $('#alreadyingame').modal('show');
+            console.log(" playerList[i] === myUserId already in the game", playerList[i], myUserId)
             return; // _Already in the game. Abort transaction._
           }
           else if (!(i in playerList) && !joinedGame) {
@@ -328,30 +401,31 @@
         // _Couldn't join.  Abort transaction by returning nothing._
       }, function (success, mysterybool, transactionResultSnapshot) {
         console.log('success', success)
+        console.log('mysterybool', mysterybool);
         console.log('transactionresultsnapshot', transactionResultSnapshot.val())
-      
+
         // _Transaction has completed.  See if we're in the game._
         var myPlayerNumber = null;
         var resultPlayerList = transactionResultSnapshot.val();
         for (var i = 0; i < NUM_PLAYERS; i++) {
           if (resultPlayerList[i] === myUserId) {
             console.log('// _I got into the game._');
-            console.log('myplayernumber: ',myPlayerNumber)
+            console.log('myplayernumber: ', myPlayerNumber)
             myPlayerNumber = i;
             console.log('myplayernumber: ', myPlayerNumber)
             break;
           }
         }
 
-			// If this user disconnects by closing or refreshing the browser, remove the user from the database
-			playerListRef.child(myPlayerNumber).onDisconnect().remove();
+        // If this user disconnects by closing or refreshing the browser, remove the user from the database
+        playerListRef.child(myPlayerNumber).onDisconnect().remove();
         //playerListRef.child(myPlayerNumber).removeOnDisconnect();
         playGame(myPlayerNumber, myUserId);
-    });
-      }
+      });
+    }
 
-    
-    assignPlayerNumberAndPlayGame();
+getMyUserId();
+   // assignPlayerNumberAndPlayGame();
 
   </script>
 </body>
